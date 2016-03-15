@@ -1,15 +1,15 @@
 from setuptools import setup
 
-setup(name='moviemon',
-      version='1.0.11',
-      description='Everything about your movies within the command line.',
-      url='https://github.com/iCHAIT/moviemon',
-      author='Chaitanya Gupta',
-      author_email='cgupta319@gmail.com',
+setup(name='animemon',
+      version='0.1',
+      description='Everything about your anime within the command line.',
+      url='https://github.com/nims11/animemon',
+      author='Nimesh Ghelani',
+      author_email='nimeshghelani@gmail.com',
       license='MIT',
-      packages=['moviemon'],
+      packages=['animemon'],
       entry_points={
-               'console_scripts': ['moviemon=moviemon:main'],
+               'console_scripts': ['animemon=animemon:main'],
            },
       install_requires=[
           'guessit<2',
@@ -18,7 +18,7 @@ setup(name='moviemon',
           'tqdm',
           'colorama'
       ],
-      keywords=['movies', 'CLI', 'movies-within-CLI', 'python'],
+      keywords=['anime', 'CLI', 'anime-within-CLI', 'python'],
       classifiers=[
           'Environment :: Console',
           'License :: OSI Approved :: MIT License',

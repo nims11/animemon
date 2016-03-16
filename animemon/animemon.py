@@ -1,9 +1,9 @@
-
+#!/usr/bin/python
 """animemon.
 
 Usage:
-  animemon PATH
-  animemon [-m | -u | -g | -y | -r | -M | -U ]
+  animemon [ --auth=user:pass ] PATH
+  animemon [ -m | -n | -g | -y | -r | -M | -N ]
   animemon -h | --help
   animemon --version
 
@@ -11,13 +11,14 @@ Options:
   -h, --help            Show this screen.
   --version             Show version.
   PATH                  Path to anime dir. to index/reindex all anime.
+  --auth=user:pass      Your MyAnimeList username (eg. --auth=coolguy123:password12)
   -m, --mal             Sort acc. to MyAnimeList rating.(dec)
-  -u, --humming         Sort acc. to Hummingbird rating.(dec)
+  -n, --humming         Sort acc. to Hummingbird rating.(dec)
   -g, --genre           Show anime name with its genre.
   -y, --year            Show anime name with its release date.
   -r, --runtime         Show anime name with its runtime.
   -M, --mal-rev         Sort acc. to MyAnimeList rating.(inc)
-  -U, --humming-rev     Sort acc. to Hummingbird rating.(inc)
+  -N, --humming-rev     Sort acc. to Hummingbird rating.(inc)
 
 """
 
@@ -26,6 +27,7 @@ import os
 import textwrap
 import requests
 import json
+import sys
 from guessit import guess_file_info
 from terminaltables import AsciiTable
 try:
@@ -35,11 +37,14 @@ except:
 from docopt import docopt
 from tqdm import tqdm
 from colorama import init, Fore
+import xml.etree.ElementTree
 
 init()
 
 MAL_API_URL = 'http://myanimelist.net/api/anime/search.xml?'
 HUMMINGBIRD_URL = 'http://hummingbird.me/api/v1/search/anime?'
+MAL_USER = None
+MAL_PASS = None
 
 EXT = (".3g2 .3gp .3gp2 .3gpp .60d .ajp .asf .asx .avchd .avi .bik .bix"
        ".box .cam .dat .divx .dmf .dv .dvr-ms .evo .flc .fli .flic .flv"
@@ -55,7 +60,19 @@ CONFIG_PATH = os.path.expanduser("~/.animemon")
 
 
 def main():
+    global MAL_USER, MAL_PASS
     args = docopt(__doc__, version='animemon 0.1')
+    if args['PATH']:
+        if args['--auth']:
+            if ':' in args['--auth']:
+                user, passwd = args['--auth'].split(':', 1)
+                if len(user) > 0 or len(passwd) > 0:
+                    MAL_USER, MAL_PASS = user, passwd
+            if MAL_USER == None or MAL_PASS == None:
+                print(Fore.RED + 'BAD format for --mal-auth, see help (--help) for proper format')
+                sys.exit(1)
+        if MAL_USER == None or MAL_PASS == None:
+            print(Fore.RED + 'MyAnimeList Username and Password not specified, MAL Rating won\'t be computed')
     util(args)
 
 
@@ -284,12 +301,24 @@ def get_anime_info(name):
     else:
         not_a_anime.append(name)
 
+def getMALRating(title):
+    if MAL_USER == None or MAL_PASS == None:
+        return -1
+    try:
+        xmlresponse = requests.get(MAL_API_URL+'q='+title, auth=(MAL_USER, MAL_PASS)).content
+        et = xml.etree.ElementTree.fromstring(xmlresponse.strip())
+        if len(list(et)) == 0:
+            return -1
+        return list(et)[0].find('score').text
+    except:
+        return -1
+
 def convertResponse(entry):
     return {
         'Title': entry['title'],
         'Year': (entry['started_airing'].split('-', 1)[0] if entry['started_airing'] != None else "N/A"),
         'Genre': ','.join([x['name'] for x in entry['genres']]),
-        'malRating': "-1",
+        'malRating': str(getMALRating(entry['title'])),
         'hummingRating': str(entry['community_rating']),
         'Runtime': 'Ep: %s, Length: %s min' % (str(entry['episode_count']) if entry['episode_count'] != None else "N/A",
                                                str(entry['episode_length']) if entry['episode_length'] != None else "N/A"),

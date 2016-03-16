@@ -1,26 +1,23 @@
 
-"""moviemon.
+"""animemon.
 
 Usage:
-  moviemon PATH
-  moviemon [-i | -t | -g | -a | -c | -d | -y | -r | -I | -T ]
-  moviemon -h | --help
-  moviemon --version
+  animemon PATH
+  animemon [-m | -u | -g | -y | -r | -M | -U ]
+  animemon -h | --help
+  animemon --version
 
 Options:
   -h, --help            Show this screen.
   --version             Show version.
-  PATH                  Path to movies dir. to index/reindex all movies.
-  -i, --imdb            Sort acc. to IMDB rating.(dec)
-  -t, --tomato          Sort acc. to Tomato Rotten rating.(dec)
-  -g, --genre           Show movie name with its genre.
-  -a, --awards          Show movie name with awards recieved.
-  -c, --cast            Show movie name with its cast.
-  -d, --director        Show movie name with its director(s).
-  -y, --year            Show movie name with its release date.
-  -r, --runtime         Show movie name with its runtime.
-  -I, --imdb-rev        Sort acc. to IMDB rating.(inc)
-  -T, --tomato-rev      Sort acc. to Tomato Rotten rating.(inc)
+  PATH                  Path to anime dir. to index/reindex all anime.
+  -m, --mal             Sort acc. to MyAnimeList rating.(dec)
+  -u, --humming         Sort acc. to Hummingbird rating.(dec)
+  -g, --genre           Show anime name with its genre.
+  -y, --year            Show anime name with its release date.
+  -r, --runtime         Show anime name with its runtime.
+  -M, --mal-rev         Sort acc. to MyAnimeList rating.(inc)
+  -U, --humming-rev     Sort acc. to Hummingbird rating.(inc)
 
 """
 
@@ -41,7 +38,8 @@ from colorama import init, Fore
 
 init()
 
-OMDB_URL = 'http://www.omdbapi.com/?'
+MAL_API_URL = 'http://myanimelist.net/api/anime/search.xml?'
+HUMMINGBIRD_URL = 'http://hummingbird.me/api/v1/search/anime?'
 
 EXT = (".3g2 .3gp .3gp2 .3gpp .60d .ajp .asf .asx .avchd .avi .bik .bix"
        ".box .cam .dat .divx .dmf .dv .dvr-ms .evo .flc .fli .flic .flv"
@@ -53,11 +51,11 @@ EXT = (".3g2 .3gp .3gp2 .3gpp .60d .ajp .asf .asx .avchd .avi .bik .bix"
 
 EXT = tuple(EXT.split())
 
-CONFIG_PATH = os.path.expanduser("~/.moviemon")
+CONFIG_PATH = os.path.expanduser("~/.animemon")
 
 
 def main():
-    args = docopt(__doc__, version='moviemon 1.0.11')
+    args = docopt(__doc__, version='animemon 0.1')
     util(args)
 
 
@@ -65,7 +63,7 @@ def util(docopt_args):
     if docopt_args["PATH"]:
         if os.path.isdir(docopt_args["PATH"]):
 
-            print("\n\nIndexing all movies inside ",
+            print("\n\nIndexing all anime inside ",
                   docopt_args["PATH"] + "\n\n")
 
             dir_json = docopt_args["PATH"] + ".json"
@@ -76,41 +74,41 @@ def util(docopt_args):
 
             scan_dir(docopt_args["PATH"], dir_json)
 
-            if movie_name:
-                if movie_not_found:
-                    print(Fore.RED + "\n\nData for the following movie(s)"
+            if anime_name:
+                if anime_not_found:
+                    print(Fore.RED + "\n\nData for the following anime(s)"
                           " could not be fetched -\n")
-                    for val in movie_not_found:
+                    for val in anime_not_found:
                         print(Fore.RED + val)
-                if not_a_movie:
+                if not_a_anime:
                     print(Fore.RED + "\n\nThe following media in the"
-                          " folder is not movie type -\n")
-                    for val in not_a_movie:
+                          " folder is not anime type -\n")
+                    for val in not_a_anime:
                         print(Fore.RED + val)
-                print(Fore.GREEN + "\n\nRun $moviemon\n\n")
+                print(Fore.GREEN + "\n\nRun $animemon\n\n")
             else:
-                print(Fore.RED + "\n\nGiven directory does not contain movies."
-                      " Pass a directory containing movies\n\n")
+                print(Fore.RED + "\n\nGiven directory does not contain anime."
+                      " Pass a directory containing anime\n\n")
         else:
             print(Fore.RED + "\n\nDirectory does not exists."
-                  " Please pass a valid directory containing movies.\n\n")
+                  " Please pass a valid directory containing anime.\n\n")
 
-    elif docopt_args["--imdb"]:
-        table_data = [["TITLE", "IMDB RATING"]]
+    elif docopt_args["--mal"]:
+        table_data = [["TITLE", "MAL RATING"]]
         data, table = butler(table_data)
         for item in data:
             item["Title"] = clean_table(item["Title"], None, item,
                                         table)
-            table_data.append([item["Title"], item["imdbRating"]])
+            table_data.append([item["Title"], item["malRating"]])
         sort_table(table_data, 1, True)
 
-    elif docopt_args["--tomato"]:
-        table_data = [["TITLE", "TOMATO RATING"]]
+    elif docopt_args["--humming"]:
+        table_data = [["TITLE", "HUMMINGBIRD RATING"]]
         data, table = butler(table_data)
         for item in data:
             item["Title"] = clean_table(item["Title"], None, item,
                                         table)
-            table_data.append([item["Title"], item["tomatoRating"]])
+            table_data.append([item["Title"], item["hummingRating"]])
         sort_table(table_data, 1, True)
 
     elif docopt_args["--genre"]:
@@ -120,36 +118,6 @@ def util(docopt_args):
             item["Title"] = clean_table(item["Title"], None,
                                         item, table)
             table_data.append([item["Title"], item["Genre"]])
-        sort_table(table_data, 0, False)
-
-    elif docopt_args["--awards"]:
-        table_data = [["TITLE", "AWARDS"]]
-        data, table = butler(table_data)
-        for item in data:
-            item["Title"], item["Awards"] = clean_table(item["Title"],
-                                                        item["Awards"], item,
-                                                        table)
-            table_data.append([item["Title"], item["Awards"]])
-        sort_table(table_data, 0, False)
-
-    elif docopt_args["--cast"]:
-        table_data = [["TITLE", "CAST"]]
-        data, table = butler(table_data)
-        for item in data:
-            item["Title"], item["Actors"] = clean_table(item["Title"],
-                                                        item["Actors"], item,
-                                                        table)
-            table_data.append([item["Title"], item["Actors"]])
-        sort_table(table_data, 0, False)
-
-    elif docopt_args["--director"]:
-        table_data = [["TITLE", "DIRECTOR(S)"]]
-        data, table = butler(table_data)
-        for item in data:
-            item["Title"], item["Director"] = clean_table(item["Title"],
-                                                          item["Director"],
-                                                          item, table)
-            table_data.append([item["Title"], item["Director"]])
         sort_table(table_data, 0, False)
 
     elif docopt_args["--year"]:
@@ -170,27 +138,27 @@ def util(docopt_args):
             table_data.append([item["Title"], item["Runtime"]])
         print_table(table_data)
 
-    elif docopt_args["--imdb-rev"]:
-        table_data = [["TITLE", "IMDB RATING"]]
+    elif docopt_args["--mal-rev"]:
+        table_data = [["TITLE", "MAL RATING"]]
         data, table = butler(table_data)
         for item in data:
             item["Title"] = clean_table(item["Title"], None, item,
                                         table)
-            table_data.append([item["Title"], item["imdbRating"]])
+            table_data.append([item["Title"], item["malRating"]])
         sort_table(table_data, 1, False)
 
-    elif docopt_args["--tomato-rev"]:
-        table_data = [["TITLE", "TOMATO RATING"]]
+    elif docopt_args["--humming-rev"]:
+        table_data = [["TITLE", "HUMMINGBIRD RATING"]]
         data, table = butler(table_data)
         for item in data:
             item["Title"] = clean_table(item["Title"], None, item,
                                         table)
-            table_data.append([item["Title"], item["tomatoRating"]])
+            table_data.append([item["Title"], item["hummingRating"]])
         sort_table(table_data, 1, False)
 
     else:
         table_data = [
-            ["TITLE", "GENRE", "IMDB", "RUNTIME", "TOMATO",
+            ["TITLE", "GENRE", "MAL", "RUNTIME", "HUMMINGBIRD",
              "YEAR"]]
         data, table = butler(table_data)
         for item in data:
@@ -198,8 +166,8 @@ def util(docopt_args):
                                                        item["Genre"], item,
                                                        table)
             table_data.append([item["Title"], item["Genre"],
-                               item["imdbRating"], item["Runtime"],
-                               item["tomatoRating"], item["Year"]])
+                               item["malRating"], item["Runtime"],
+                               item["hummingRating"], item["Year"]])
         sort_table(table_data, 0, False)
 
 
@@ -232,37 +200,37 @@ def clean_table(tag1, tag2, item, table):
 def butler(table_data):
     try:
         with open(CONFIG_PATH) as config:
-            movie_path = config.read()
+            anime_path = config.read()
     except IOError:
-        print(Fore.RED, "\n\nRun `$moviemon PATH` to "
-              "index your movies directory.\n\n")
+        print(Fore.RED, "\n\nRun `$animemon PATH` to "
+              "index your anime directory.\n\n")
         quit()
     else:
         table = AsciiTable(table_data)
         try:
-            with open(movie_path + ".json") as inp:
+            with open(anime_path + ".json") as inp:
                 data = json.load(inp)
             return data, table
         except IOError:
-            print(Fore.YELLOW, "\n\nRun `$moviemon PATH` to "
-                  "index your movies directory.\n\n")
+            print(Fore.YELLOW, "\n\nRun `$animemon PATH` to "
+                  "index your anime directory.\n\n")
             quit()
 
 
 def print_table(table_data):
     table = AsciiTable(table_data)
     table.inner_row_border = True
-    if table_data[:1] in ([['TITLE', 'IMDB RATING']],
-                          [['TITLE', 'TOMATO RATING']]):
+    if table_data[:1] in ([['TITLE', 'MAL RATING']],
+                          [['TITLE', 'HUMMINGBIRD RATING']]):
         table.justify_columns[1] = 'center'
     print("\n")
     print(table.table)
 
 
-movies = []
-movie_name = []
-not_a_movie = []
-movie_not_found = []
+anime = []
+anime_name = []
+not_a_anime = []
+anime_not_found = []
 
 
 def scan_dir(path, dir_json):
@@ -270,52 +238,82 @@ def scan_dir(path, dir_json):
     for root, dirs, files in tqdm(os.walk(path)):
         for name in files:
             path = os.path.join(root, name)
-            if os.path.getsize(path) > (25*1024*1024):
+            if os.path.getsize(path) > (9*1024*1024):
                 ext = os.path.splitext(name)[1]
                 if ext in EXT:
-                    movie_name.append(name)
+                    anime_name.append(name)
 
-    with tqdm(total=len(movie_name), leave=True, unit='B',
+    with tqdm(total=len(anime_name), leave=True, unit='B',
               unit_scale=True) as pbar:
-        for name in movie_name:
-            data = get_movie_info(name)
+        for name in anime_name:
+            data = get_anime_info(name)
             pbar.update()
-            if data is not None and data['Response'] == 'True':
+            if data is not None and data.get('Response', 'False') == 'True':
                 for key, val in data.items():
                     if val == "N/A":
                         data[key] = "-"  # Should N/A be replaced with `-`?
-                movies.append(data)
+                anime.append(data)
+            elif data is not None and data['Cached'] == True:
+                pass
             else:
                 if data is not None:
-                    movie_not_found.append(name)
+                    anime_not_found.append(name)
         with open(dir_json, "w") as out:
-            json.dump(movies, out, indent=2)
+            json.dump(anime, out, indent=2)
 
+titleCache = {}
 
-def get_movie_info(name):
-    """Find movie information"""
-    movie_info = guess_file_info(name)
-    if movie_info['type'] == "movie":
-        if 'year' in movie_info:
-            return omdb(movie_info['title'], movie_info['year'])
+def get_anime_info(name):
+    global titleCache
+    """Find anime information"""
+    anime_info = guess_file_info(name, type="episode")
+    anime_title = anime_info.get('title', anime_info.get('series', None))
+    if anime_title != None:
+        if anime_title.lower() in titleCache:
+            return {'Cached': True}
+        response = None
+        if 'year' in anime_info:
+            response = hummingbird(anime_title, anime_info['year'])
         else:
-            return omdb(movie_info['title'], None)
+            response = hummingbird(anime_title, None)
+        if response['Title'].lower() in titleCache:
+            return {'Cached': True}
+        titleCache[response['Title'].lower()] = True
+        titleCache[anime_title.lower()] = True
+        return response
     else:
-        not_a_movie.append(name)
+        not_a_anime.append(name)
 
+def convertResponse(entry):
+    return {
+        'Title': entry['title'],
+        'Year': (entry['started_airing'].split('-', 1)[0] if entry['started_airing'] != None else "N/A"),
+        'Genre': ','.join([x['name'] for x in entry['genres']]),
+        'malRating': "-1",
+        'hummingRating': str(entry['community_rating']),
+        'Runtime': 'Ep: %s, Length: %s min' % (str(entry['episode_count']) if entry['episode_count'] != None else "N/A",
+                                               str(entry['episode_length']) if entry['episode_length'] != None else "N/A"),
+        'Response': "True"
+    }
 
-def omdb(title, year):
-    """ Fetch data from OMDB API. """
-    params = {'t': title.encode('ascii', 'ignore'),
-              'plot': 'full',
-              'type': 'movie',
-              'tomatoes': 'true'}
+def hummingbird(title, year):
+    """ Fetch data from HUMMINGBIRD API. """
+    params = {'query': title}
+    url = HUMMINGBIRD_URL + urlencode(params)
+    response = requests.get(url).json()
 
     if year:
-        params['y'] = year
+        filteredResponse = []
+        for animeEntry in response:
+            if year in (animeEntry['started_airing'].split('-', 1)[0] if animeEntry['started_airing'] != None else None,
+                        animeEntry['finished_airing'].split('-', 1)[0] if animeEntry['finished_airing'] != None else None):
+                filteredResponse.append(animeEntry)
+            if len(filteredResponse) > 0:
+                response = filteredResponse
 
-    url = OMDB_URL + urlencode(params)
-    return json.loads(requests.get(url).text)
+    if len(response) == 0:
+        return None
+    return convertResponse(response[0])
 
 if __name__ == '__main__':
     main()

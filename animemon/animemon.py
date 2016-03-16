@@ -72,7 +72,7 @@ def main():
                 print(Fore.RED + 'BAD format for --mal-auth, see help (--help) for proper format')
                 sys.exit(1)
         if MAL_USER == None or MAL_PASS == None:
-            print(Fore.RED + 'MyAnimeList Username and Password not specified, MAL Rating won\'t be computed')
+            print(Fore.RED + 'MyAnimeList Username and Password not specified, MAL Rating won\'t be computed' + Fore.RESET)
     util(args)
 
 

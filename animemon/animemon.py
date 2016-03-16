@@ -305,11 +305,17 @@ def getMALRating(title):
     if MAL_USER == None or MAL_PASS == None:
         return -1
     try:
-        xmlresponse = requests.get(MAL_API_URL+'q='+title, auth=(MAL_USER, MAL_PASS)).content
-        et = xml.etree.ElementTree.fromstring(xmlresponse.strip())
+        xmlresponse = requests.get(MAL_API_URL+'q='+title, auth=(MAL_USER, MAL_PASS))
+        status = xmlresponse.status_code
+        if status//100 == 4:
+            print(Fore.RED + 'MAL Auth failed, correct the credentials or remove the auth parameter' + Fore.RESET)
+            sys.exit(1)
+        et = xml.etree.ElementTree.fromstring(xmlresponse.content.strip())
         if len(list(et)) == 0:
             return -1
         return list(et)[0].find('score').text
+    except SystemExit:
+        sys.exit(1)
     except:
         return -1
 

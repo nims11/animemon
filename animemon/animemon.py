@@ -61,7 +61,7 @@ CONFIG_PATH = os.path.expanduser("~/.animemon")
 
 def main():
     global MAL_USER, MAL_PASS
-    args = docopt(__doc__, version='animemon 0.1')
+    args = docopt(__doc__, version='animemon 0.1.1')
     if args['PATH']:
         if args['--auth']:
             if ':' in args['--auth']:

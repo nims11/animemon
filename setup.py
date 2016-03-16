@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='animemon',
-      version='0.1',
+      version='0.1.1',
       description='Everything about your anime within the command line.',
       url='https://github.com/nims11/animemon',
       author='Nimesh Ghelani',

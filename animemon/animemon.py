@@ -28,7 +28,8 @@ import textwrap
 import requests
 import json
 import sys
-from guessit import guess_file_info
+import re
+from guessit import guess_episode_info
 from terminaltables import AsciiTable
 try:
     from urllib.parse import urlencode
@@ -245,7 +246,7 @@ def print_table(table_data):
 
 
 anime = []
-anime_name = []
+anime_name = set()
 not_a_anime = []
 anime_not_found = []
 
@@ -256,9 +257,12 @@ def scan_dir(path, dir_json):
         for name in files:
             path = os.path.join(root, name)
             if os.path.getsize(path) > (9*1024*1024):
-                ext = os.path.splitext(name)[1]
+                prefix, ext = os.path.splitext(name)
                 if ext in EXT:
-                    anime_name.append(name)
+                    if re.match('^[0-9]+$', prefix) != None or os.path.split(root)[-1].lower() in prefix.lower():
+                        anime_name.add(root)
+                    else:
+                        anime_name.add(root)
 
     with tqdm(total=len(anime_name), leave=True, unit='B',
               unit_scale=True) as pbar:
@@ -283,25 +287,30 @@ titleCache = {}
 def get_anime_info(name):
     global titleCache
     """Find anime information"""
-    anime_info = guess_file_info(name, type="episode")
-    anime_title = anime_info.get('title', anime_info.get('series', None))
+    anime_title = name.replace('/', ' ')
+    if anime_title[0] == '.':
+        anime_title = anime_title[1:]
+    anime_info = guess_episode_info(name, options={'allowed_languages': ['fr']})
+    # anime_title = anime_info.get('series', anime_info.get('title', None))
     if anime_title != None:
         if anime_title.lower() in titleCache:
             return {'Cached': True}
         response = None
+        print(name)
         if 'year' in anime_info:
             response = hummingbird(anime_title, anime_info['year'])
         else:
             response = hummingbird(anime_title, None)
+        titleCache[anime_title.lower()] = True
         if response['Title'].lower() in titleCache:
             return {'Cached': True}
         titleCache[response['Title'].lower()] = True
-        titleCache[anime_title.lower()] = True
         return response
     else:
         not_a_anime.append(name)
 
 def getMALRating(title):
+    print(repr(title))
     if MAL_USER == None or MAL_PASS == None:
         return -1
     try:
